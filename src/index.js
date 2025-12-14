@@ -1,6 +1,7 @@
 const express = require("express");
 const authSimulated = require("./middleware/auth");
 const db = require("./db");
+const cors = require("cors");
 const {
   getAccountById,
   transferFunds,
@@ -12,6 +13,16 @@ const {
 const app = express();
 app.use(express.json());
 app.use(authSimulated);
+
+const originPermitida = "http://localhost:4200";
+
+app.use(
+  cors({
+    origin: originPermitida,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+  })
+);
 
 app.post("/transactions", async (req, res) => {
   try {
@@ -45,8 +56,8 @@ app.post("/transactions", async (req, res) => {
 // Consultar carteiras da conta logada
 app.get("/wallets/", async (req, res) => {
   try {
-    const headerId = req.header('x-user-account-id');
-    const accountId = headerId ? String(headerId) : '64bc833f8c6a5e76f413fb34'; 
+    const headerId = req.header("x-user-account-id");
+    const accountId = headerId ? String(headerId) : "64bc833f8c6a5e76f413fb34";
     const acct = await getWallets(accountId);
     if (!acct) return res.status(404).json({ error: "WALLETNOTFOUND" });
     res.json(acct);
@@ -54,7 +65,6 @@ app.get("/wallets/", async (req, res) => {
     return res.status(400).json({ error: err.message });
   }
 });
-
 
 // Consultar histórico de transações de uma conta específica
 app.get("/wallet/transactions/:id", async (req, res) => {
@@ -67,19 +77,29 @@ app.get("/dexuseu", async (req, res) => {
   try {
     const { start, end, dateField } = req.query;
     if (!start || !end) {
-      return res.status(400).json({ error: 'Query params start and end required, format YYYY-MM-DD' });
+      return res
+        .status(400)
+        .json({
+          error: "Query params start and end required, format YYYY-MM-DD",
+        });
     }
 
     const re = /^\d{4}-\d{2}-\d{2}$/;
     if (!re.test(start) || !re.test(end)) {
-      return res.status(400).json({ error: 'Invalid date format, use YYYY-MM-DD' });
+      return res
+        .status(400)
+        .json({ error: "Invalid date format, use YYYY-MM-DD" });
     }
 
-    const records = await queryDexUseuByDateRange(start, end, dateField || 'observation_date');
+    const records = await queryDexUseuByDateRange(
+      start,
+      end,
+      dateField || "observation_date"
+    );
     return res.json(records);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message || 'Internal error' });
+    return res.status(500).json({ error: err.message || "Internal error" });
   }
 });
 
