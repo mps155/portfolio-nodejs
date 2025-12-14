@@ -1,8 +1,6 @@
 const { connect, getCollection } = require("./db");
 const { ObjectId } = require("mongodb");
 
-// Nota: funções agora são assíncronas e usam MongoDB.
-
 async function getAccountById(id) {
   const accounts = getCollection("Owner");
   console.log("getAccountById called with id:", id);
@@ -25,7 +23,6 @@ async function transferFunds(fromId, toId, amount) {
 
   if (amount <= 0) throw new Error("Valor deve ser maior que zero");
 
-  // Converter para ObjectId
   let fromObjId, toObjId;
   try {
     fromObjId = new ObjectId(fromId);
@@ -86,29 +83,18 @@ async function getTransactionsByAccount(accountId) {
 
 // Consulta simples na collection DEXUSEU por intervalo de datas
 // startDateStr e endDateStr devem estar no formato mm-dd-yyyy
-async function queryDexUseuByDateRange(startDateStr, endDateStr, dateField = 'Date') {
+async function queryDexUseuByDateRange(startDateStr, endDateStr, dateField = 'observation_date') {
   const coll = getCollection('DEXUSEU');
 
-  function parseMMDDYYYY(s) {
-    const parts = String(s).split('-');
-    if (parts.length !== 3) throw new Error('Data deve estar no formato mm-dd-yyyy');
-    const [mm, dd, yyyy] = parts.map((p) => parseInt(p, 10));
-    return new Date(yyyy, mm - 1, dd);
+  // Validar formato YYYY-MM-DD
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  if (!re.test(startDateStr) || !re.test(endDateStr)) {
+    throw new Error('Data deve estar no formato YYYY-MM-DD');
   }
 
-  const start = parseMMDDYYYY(startDateStr);
-  const end = parseMMDDYYYY(endDateStr);
-
+  // Comparação lexicográfica direta com strings
   const pipeline = [
-    {
-      $addFields: {
-        __parsedDate: {
-          $dateFromString: { dateString: `$${dateField}`, format: '%m-%d-%Y' },
-        },
-      },
-    },
-    { $match: { __parsedDate: { $gte: start, $lte: end } } },
-    { $project: { __parsedDate: 0 } },
+    { $match: { [dateField]: { $gte: startDateStr, $lte: endDateStr } } },
   ];
 
   return await coll.aggregate(pipeline).toArray();

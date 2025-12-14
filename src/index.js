@@ -67,15 +67,15 @@ app.get("/dexuseu", async (req, res) => {
   try {
     const { start, end, dateField } = req.query;
     if (!start || !end) {
-      return res.status(400).json({ error: 'Query params start and end required, format mm-dd-yyyy' });
+      return res.status(400).json({ error: 'Query params start and end required, format YYYY-MM-DD' });
     }
 
-    const re = /^\d{2}-\d{2}-\d{4}$/;
+    const re = /^\d{4}-\d{2}-\d{2}$/;
     if (!re.test(start) || !re.test(end)) {
-      return res.status(400).json({ error: 'Invalid date format, use mm-dd-yyyy' });
+      return res.status(400).json({ error: 'Invalid date format, use YYYY-MM-DD' });
     }
 
-    const records = await queryDexUseuByDateRange(start, end, dateField || 'Date');
+    const records = await queryDexUseuByDateRange(start, end, dateField || 'observation_date');
     return res.json(records);
   } catch (err) {
     console.error(err);
